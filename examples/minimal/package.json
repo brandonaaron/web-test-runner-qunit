@@ -1,0 +1,15 @@
+{
+  "name": "web-test-runner-qunit-examples-minimal",
+  "version": "1.0.0",
+  "description": "A minimal example project for web-test-runner-qunit project.",
+  "type": "module",
+  "scripts": {
+    "test": "wtr test.js",
+    "test:open": "wtr test.js --manual --open"
+  },
+  "devDependencies": {
+    "@web/test-runner": "^0.18.0",
+    "qunit": "^2.20.0",
+    "web-test-runner-qunit": "^1.0.0"
+  }
+}

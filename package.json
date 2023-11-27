@@ -1,0 +1,38 @@
+{
+  "name": "web-test-runner-qunit",
+  "version": "1.0.0",
+  "description": "A @web/test-runner test framework adapter for QUnit.",
+  "main": "dist/autorun.js",
+  "module": "dist/autorun.js",
+  "types": "dist/autorun.d.js",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "wtr tests/*.ts",
+    "build": "run-s build:*",
+    "build:clean": "rimraf dist && rimraf docs",
+    "build:src": "tsc --project src/tsconfig.json",
+    "prepare": "npm run build"
+  },
+  "keywords": [],
+  "author": "Brandon Aaron",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/qunit": "^2.19.9",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "@web/dev-server": "^0.4.1",
+    "@web/dev-server-esbuild": "^1.0.1",
+    "@web/test-runner": "^0.18.0",
+    "eslint": "^8.53.0",
+    "npm-run-all": "^4.1.5",
+    "qunit": "^2.20.0",
+    "rimraf": "^5.0.5",
+    "tslib": "^2.6.2",
+    "typescript": "5.2.2"
+  },
+  "peerDependencies": {
+    "@web/test-runner": "^0.18.0",
+    "qunit": "^2.20.0"
+  }
+}
