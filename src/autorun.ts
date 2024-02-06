@@ -157,9 +157,17 @@ function collectErrors (qunitTestEndResult: WTRQUnitTestEndResult): TestResultEr
   const errors:TestResultError[] = []
   qunitTestEndResult.errors.forEach((error) => {
     if (error.todo) { return }
+    let message = `\nExpected: ${JSON.stringify(error.expected, null, 4)}\n`
+	  message += `Actual: ${JSON.stringify(error.actual, null, 4)}`
+	  message = message.split('\n').join('\n      ')
+    // expected and actual are not contained in web test runner output
+    // there exists a formatError function here
+    // https://github.com/modernweb-dev/web/blob/master/packages/test-runner/src/reporter/reportTestsErrors.ts#L36
+    // but it is not called, probably building the message on our own is not
+    // the proper way to fix this.
     const testResultError: TestResultError = {
       name,
-      message: error.message,
+      message: message,
       stack: error.stack,
       expected: `${error.expected}`,
       actual: `${error.actual}`
