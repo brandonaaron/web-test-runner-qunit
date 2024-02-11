@@ -46,6 +46,7 @@ interface WTRQUnitTestEndResult {
   errors: WTRQUnitTestEndResultAssertion[]
 }
 // for some reason the suite assertions do not include expected/action output
+// https://github.com/qunitjs/qunit/issues/1737#issuecomment-1932895219
 interface WTRQUnitSuiteTestAssertion {
   passed: boolean
   message: string
@@ -209,8 +210,8 @@ function collectErrors (qunitTestEndResult: WTRQUnitTestEndResult): WTRQunitTest
       name,
       message: error.message,
       stack: error.stack,
-      expected: `${error.expected}`,
-      actual: `${error.actual}`,
+      expected: JSON.stringify(error.expected, null, 2),
+      actual: JSON.stringify(error.actual, null, 2),
       __wtr_qunit_identifier__: error.__wtr_qunit_identifier__
     }
     errors.push(testResultError)
