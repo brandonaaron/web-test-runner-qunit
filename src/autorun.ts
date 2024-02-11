@@ -78,11 +78,18 @@ interface WTRQUnitSuiteResult {
 }
 
 const testResultErrors: TestResultError[] = []
+const testSuite = {
+  name: '',
+  tests: [],
+  suites: []
+}
 
 async function run () {
   await sessionStarted()
   const { testFile, testFrameworkConfig } = await getConfig()
   const qunitWTRConfig = testFrameworkConfig as WTRQUnitConfig
+
+  testSuite.name = testFile
 
   ;(globalThis as any).QUnit = {
     config: {
@@ -116,57 +123,89 @@ async function setupQUnit (qunitBasePath: string) {
   const qunitJSPath = `${qunitBasePath}qunit.js`
   await import(qunitJSPath)
 
+  ;(QUnit as any).on('error', (error: any) => {
+    testResultErrors.push({
+      message: error?.message,
+      stack: error?.stack
+    })
+  })
   ;(QUnit as any).on('testEnd', (qunitTestEndResult: WTRQUnitTestEndResult) => {
-    const errors = collectErrors(qunitTestEndResult)
-    testResultErrors.push(...errors)
+    addToTestSuiteResults(qunitTestEndResult)
   })
   ;(QUnit as any).on('runEnd', (qunitSuiteResults: WTRQUnitSuiteResult) => {
-    const testResults = collectTestSuiteResults(qunitSuiteResults)
-    sessionFinished({
-      passed: testResultErrors.length === 0,
-      errors: testResultErrors,
-      testResults
-    }).catch((err) => console.error(err))
+    // using a setTimeout here to try and help capture any out of sync assertions prior to calling sessionFinished
+    setTimeout(() => {
+      sessionFinished({
+        passed: qunitSuiteResults.status === 'passed',
+        errors: testResultErrors,
+        testResults: testSuite
+      }).catch((err) => console.error(err))
+    }, 1)
   })
 }
 
-function collectTestSuiteResults (qunitSuiteResults: WTRQUnitSuiteResult): TestSuiteResult {
-  const tests: TestResult[] = qunitSuiteResults.tests.map((qunitTestResult) => {
-    // In QUnit land a status of "todo" is passing if there is at least one error
-    let passed = qunitTestResult.status === 'passed'
-    if (qunitTestResult.status === 'todo') { passed = qunitTestResult.errors.length > 0 }
-    return {
-      name: qunitTestResult.name,
-      passed,
-      skipped: qunitTestResult.status === 'skipped',
-      duration: qunitTestResult.runtime
+function addToTestSuiteResults (qunitTestEndResult: WTRQUnitTestEndResult) {
+  const testSuiteResult = qunitTestEndResult.fullName.reduce((testSuiteInstance: TestSuiteResult, name: string) => {
+    let suite = testSuiteInstance.suites.find((nestedTestSuite: TestSuiteResult) => nestedTestSuite.name === name)
+    if (!suite) {
+      suite = {
+        name,
+        suites: [],
+        tests: []
+      } as TestSuiteResult
+      testSuiteInstance.suites.push(suite)
     }
-  })
-  const suites: TestSuiteResult[] = qunitSuiteResults.childSuites.map(collectTestSuiteResults)
-  const testSuiteResult: TestSuiteResult = {
-    name: qunitSuiteResults.name,
-    tests,
-    suites
+    return suite
+  }, testSuite)
+
+  const todo = qunitTestEndResult.assertions.some((assertion: WTRQUnitSuiteTestAssertion) => assertion.todo)
+  if (todo) {
+    testSuiteResult.tests = [convertTodoToTestResult(qunitTestEndResult)]
+  } else {
+    const baseTestResult = {
+      name: qunitTestEndResult.name,
+      passed: qunitTestEndResult.status === 'passed',
+      skipped: qunitTestEndResult.status === 'skipped'
+    } as TestResult
+    testSuiteResult.tests = collectAssertionsAsTestResults(baseTestResult, qunitTestEndResult.assertions)
   }
-
-  return testSuiteResult
 }
 
-function collectErrors (qunitTestEndResult: WTRQUnitTestEndResult): TestResultError[] {
-  const name = qunitTestEndResult.fullName.join(' > ')
-  const errors:TestResultError[] = []
-  qunitTestEndResult.errors.forEach((error) => {
-    if (error.todo) { return }
-    const testResultError: TestResultError = {
-      name,
-      message: error.message,
-      stack: error.stack,
-      expected: `${error.expected}`,
-      actual: `${error.actual}`
+function collectAssertionsAsTestResults (baseTestResult: TestResult, assertions: WTRQUnitTestEndResultAssertion[]): TestResult[] {
+  return assertions.map((assertion) => {
+    const testResult = { ...baseTestResult }
+    if (assertion.message) { testResult.name = assertion.message }
+    if (!testResult.passed) {
+      const testResultError = {
+        message: assertion.message,
+        stack: assertion.stack,
+        expected: JSON.stringify(assertion.expected),
+        actual: JSON.stringify(assertion.actual)
+      } as TestResultError
+      testResult.error = testResultError
     }
-    errors.push(testResultError)
+    return testResult
   })
-  return errors
+}
+
+function convertTodoToTestResult (qunitTestEndResult: WTRQUnitTestEndResult): TestResult {
+  const { passing, failing } = qunitTestEndResult.assertions.reduce((counts, assertion) => {
+    counts[assertion.passed ? 'passing' : 'failing']++
+    return counts
+  }, { passing: 0, failing: 0 })
+  const name = `TODO with ${passing} passing and ${failing} failing assertions`
+  const testResult = {
+    name: name,
+    passed: qunitTestEndResult.status === 'todo',
+    skipped: false
+  } as TestResult
+  if (!testResult.passed) {
+    testResult.error = {
+      message: 'Expected at least one failure in TODO test but found none',
+      name: qunitTestEndResult.name
+    } as TestResultError
+  }
+  return testResult
 }
 
 function failed (error: any) {
