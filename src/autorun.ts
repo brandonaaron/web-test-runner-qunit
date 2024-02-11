@@ -179,8 +179,8 @@ function collectAssertionsAsTestResults (baseTestResult: TestResult, assertions:
       const testResultError = {
         message: assertion.message,
         stack: assertion.stack,
-        expected: JSON.stringify(assertion.expected),
-        actual: JSON.stringify(assertion.actual)
+        expected: JSON.stringify(assertion.expected, null, 2),
+        actual: JSON.stringify(assertion.actual, null, 2)
       } as TestResultError
       testResult.error = testResultError
     }
