@@ -141,6 +141,54 @@ async function setupQUnit (qunitBasePath: string) {
   })
 }
 
+/**
+ * Builds up an @web/test-runner TestSuite. Each `QUnit.module` and `QUnit.test` map to "suites" (`TestSuiteResult`).
+ * Any `assert` calls map to "tests" (`TestResult`).
+ *
+ * Example:
+ * QUnit.test('testing 1', assert => { assert.true(true, 'assertion 1') })
+ * QUnit.module('module 1', () => {
+ *   QUnit.test('testing 2', assert => { assert.true(true, 'assertion 2') })
+ * })
+ *
+ * Resulting `TestSession.testResults`:
+ * {
+ *   "name": "/tests/test.ts?wtr-session-id=Jr2T0ht2UKf3ICpkuKzyb",
+ *   "tests": [],
+ *   "suites": [
+ *     {
+ *       "name": "testing 1",
+ *       "suites": [],
+ *       "tests": [
+ *         {
+ *           "name": "assertion 1",
+ *           "passed": true,
+ *           "skipped": false
+ *         }
+ *       ]
+ *     },
+ *     {
+ *       "name": "module 1",
+ *       "suites": [
+ *         {
+ *           "name": "testing 2",
+ *           "suites": [],
+ *           "tests": [
+ *             {
+ *               "name": "assertion 2",
+ *               "passed": true,
+ *               "skipped": false
+ *             }
+ *           ]
+ *         }
+ *       ],
+ *       "tests": []
+ *     }
+ *   ]
+ * }
+ *
+ * `TestSession`, `TestSuiteResult`, `TestResult`: https://github.com/modernweb-dev/web/blob/f7fcf29cb79e82ad5622665d76da3f6b23d0ef43/packages/test-runner-core/src/test-session/TestSession.ts
+ */
 function addToTestSuiteResults (qunitTestEndResult: WTRQUnitTestEndResult) {
   const testSuiteResult = qunitTestEndResult.fullName.reduce((testSuiteInstance: TestSuiteResult, name: string) => {
     let suite = testSuiteInstance.suites.find((nestedTestSuite: TestSuiteResult) => nestedTestSuite.name === name)
