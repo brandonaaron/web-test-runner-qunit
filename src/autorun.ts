@@ -157,14 +157,14 @@ function addToTestSuiteResults (qunitTestEndResult: WTRQUnitTestEndResult) {
 
   const todo = qunitTestEndResult.assertions.some((assertion: WTRQUnitSuiteTestAssertion) => assertion.todo)
   if (todo) {
-    testSuiteResult.tests = [convertTodoToTestResult(qunitTestEndResult)]
+    testSuiteResult.tests.push(convertTodoToTestResult(qunitTestEndResult))
   } else {
     const baseTestResult = {
       name: qunitTestEndResult.name,
       passed: qunitTestEndResult.status === 'passed',
       skipped: qunitTestEndResult.status === 'skipped'
     } as TestResult
-    testSuiteResult.tests = collectAssertionsAsTestResults(baseTestResult, qunitTestEndResult.assertions)
+    testSuiteResult.tests = testSuiteResult.tests.concat(collectAssertionsAsTestResults(baseTestResult, qunitTestEndResult.assertions))
   }
 }
 
