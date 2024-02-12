@@ -133,14 +133,11 @@ async function setupQUnit (qunitBasePath: string) {
     addToTestSuiteResults(qunitTestEndResult)
   })
   ;(QUnit as any).on('runEnd', (qunitSuiteResults: WTRQUnitSuiteResult) => {
-    // using a setTimeout here to try and help capture any out of sync assertions prior to calling sessionFinished
-    setTimeout(() => {
-      sessionFinished({
-        passed: qunitSuiteResults.status === 'passed',
-        errors: testResultErrors,
-        testResults: testSuite
-      }).catch((err) => console.error(err))
-    }, 1)
+    sessionFinished({
+      passed: qunitSuiteResults.status === 'passed',
+      errors: testResultErrors,
+      testResults: testSuite
+    }).catch((err) => console.error(err))
   })
 }
 
