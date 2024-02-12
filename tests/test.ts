@@ -8,6 +8,15 @@ QUnit.todo('testing todo', (assert) => {
 
 QUnit.skip('testing skip')
 
+QUnit.test('basic async test example', assert => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      assert.strictEqual(true, true, 'this is fine')
+      resolve()
+    }, 100)
+  })
+})
+
 QUnit.module('Group A', hooks => {
   // It is valid to call the same hook methods more than once.
   hooks.beforeEach(assert => {
