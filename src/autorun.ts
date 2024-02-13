@@ -218,7 +218,7 @@ function addToTestSuiteResults (qunitTestEndResult: WTRQUnitTestEndResult) {
 
 function collectAssertionsAsTestResults (baseTestResult: TestResult, assertions: WTRQUnitTestEndResultAssertion[]): TestResult[] {
   return assertions.map((assertion) => {
-    const testResult = { ...baseTestResult }
+    const testResult = { ...baseTestResult, passed: assertion.passed }
     if (assertion.message) { testResult.name = assertion.message }
     if (!testResult.passed) {
       const testResultError = {
