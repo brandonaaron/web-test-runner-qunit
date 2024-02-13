@@ -222,7 +222,7 @@ function collectAssertionsAsTestResults (baseTestResult: TestResult, assertions:
     if (assertion.message) { testResult.name = assertion.message }
     if (!testResult.passed) {
       const testResultError = {
-        message: assertion.message,
+        message: assertion.message || 'Assertion failed',
         stack: assertion.stack,
         expected: JSON.stringify(assertion.expected, null, 2),
         actual: JSON.stringify(assertion.actual, null, 2)
