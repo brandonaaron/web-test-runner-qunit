@@ -64,10 +64,9 @@ This would result in the following summary output:
 
 ### Progress Reporting
 
-Progress isn't reported per test but instead is all at once. This currently appears to be a limitation of this type of custom runner for @web/test-runner.
+Progress isn't reported per test but instead is per a test file. This currently appears to be a limitation of this type of custom runner for @web/test-runner.
 
 
 ### Assertions that occur after a test finished
 
 This does not capture assertions that happen after the full test suite has finished running (the `runEnd` QUnit event). This could happen if there is an issue with an async test that triggers an assertion after the test suite has finished running. Perhaps a workaround could be to utilize [`assert.expect`](https://api.qunitjs.com/assert/expect/).
-
