@@ -37,11 +37,12 @@ interface WTRQUnitTestEndResultAssertion {
   todo: boolean
 }
 interface WTRQUnitTestEndResult {
-  name: string,
-  fullName: string[],
-  suiteName?: string,
-  status: WTRQUnitStatus,
-  assertions: WTRQUnitTestEndResultAssertion[],
+  name: string
+  fullName: string[]
+  runtime: number
+  suiteName?: string
+  status: WTRQUnitStatus
+  assertions: WTRQUnitTestEndResultAssertion[]
   errors: WTRQUnitTestEndResultAssertion[]
 }
 // for some reason the suite assertions do not include expected/action output
@@ -82,7 +83,7 @@ const testSuite = {
   name: '',
   tests: [],
   suites: []
-}
+} as TestSuiteResult
 
 async function run () {
   await sessionStarted()
@@ -142,47 +143,53 @@ async function setupQUnit (qunitBasePath: string) {
 }
 
 /**
- * Builds up an @web/test-runner TestSuite. Each `QUnit.module` and `QUnit.test` map to "suites" (`TestSuiteResult`).
- * Any `assert` calls map to "tests" (`TestResult`).
+ * Builds up an @web/test-runner TestSuite. Each `QUnit.module` maps to a "suite" (`TestSuiteResult`).
+ * Each `QUnit.test` maps to a "test" (`TestResult`). Only the first failed assertion/error is passed
+ * to the `TestResult`.
  *
  * Example:
  * QUnit.test('testing 1', assert => { assert.true(true, 'assertion 1') })
+ * QUnit.skip('skip', assert => { assert.true(true) })
+ * QUnit.todo('todo', assert => { assert.false(true) })
  * QUnit.module('module 1', () => {
  *   QUnit.test('testing 2', assert => { assert.true(true, 'assertion 2') })
  * })
  *
  * Resulting `TestSession.testResults`:
  * {
- *   "name": "/tests/test.ts?wtr-session-id=Jr2T0ht2UKf3ICpkuKzyb",
- *   "tests": [],
- *   "suites": [
+ *   "name": "/tests/test.ts?wtr-session-id=3B2Kwt-43pSJo7FpPBIvh",
+ *   "tests": [
  *     {
  *       "name": "testing 1",
+ *       "passed": true,
+ *       "skipped": false,
+ *       "duration": 1
+ *     },
+ *     {
+ *       "name": "skip",
+ *       "passed": true,
+ *       "skipped": true,
+ *       "duration": 0
+ *     },
+ *     {
+ *       "name": "todo",
+ *       "passed": true,
+ *       "skipped": false,
+ *       "duration": 1
+ *     }
+ *   ],
+ *   "suites": [
+ *     {
+ *       "name": "module 1",
  *       "suites": [],
  *       "tests": [
  *         {
- *           "name": "assertion 1",
+ *           "name": "testing 2",
  *           "passed": true,
- *           "skipped": false
+ *           "skipped": false,
+ *           "duration": 0
  *         }
  *       ]
- *     },
- *     {
- *       "name": "module 1",
- *       "suites": [
- *         {
- *           "name": "testing 2",
- *           "suites": [],
- *           "tests": [
- *             {
- *               "name": "assertion 2",
- *               "passed": true,
- *               "skipped": false
- *             }
- *           ]
- *         }
- *       ],
- *       "tests": []
  *     }
  *   ]
  * }
@@ -190,7 +197,8 @@ async function setupQUnit (qunitBasePath: string) {
  * `TestSession`, `TestSuiteResult`, `TestResult`: https://github.com/modernweb-dev/web/blob/f7fcf29cb79e82ad5622665d76da3f6b23d0ef43/packages/test-runner-core/src/test-session/TestSession.ts
  */
 function addToTestSuiteResults (qunitTestEndResult: WTRQUnitTestEndResult) {
-  const testSuiteResult = qunitTestEndResult.fullName.reduce((testSuiteInstance: TestSuiteResult, name: string) => {
+  const modules = qunitTestEndResult.fullName.slice(0, -1)
+  const testSuiteResult = modules.reduce((testSuiteInstance: TestSuiteResult, name: string) => {
     let suite = testSuiteInstance.suites.find((nestedTestSuite: TestSuiteResult) => nestedTestSuite.name === name)
     if (!suite) {
       suite = {
@@ -203,54 +211,33 @@ function addToTestSuiteResults (qunitTestEndResult: WTRQUnitTestEndResult) {
     return suite
   }, testSuite)
 
-  const todo = qunitTestEndResult.assertions.some((assertion: WTRQUnitSuiteTestAssertion) => assertion.todo)
-  if (todo) {
-    testSuiteResult.tests.push(convertTodoToTestResult(qunitTestEndResult))
-  } else {
-    const baseTestResult = {
-      name: qunitTestEndResult.name,
-      passed: qunitTestEndResult.status === 'passed',
-      skipped: qunitTestEndResult.status === 'skipped'
-    } as TestResult
-    testSuiteResult.tests = testSuiteResult.tests.concat(collectAssertionsAsTestResults(baseTestResult, qunitTestEndResult.assertions))
-  }
-}
-
-function collectAssertionsAsTestResults (baseTestResult: TestResult, assertions: WTRQUnitTestEndResultAssertion[]): TestResult[] {
-  return assertions.map((assertion) => {
-    const testResult = { ...baseTestResult, passed: assertion.passed }
-    if (assertion.message) { testResult.name = assertion.message }
-    if (!testResult.passed) {
-      const testResultError = {
-        message: assertion.message || 'Assertion failed',
-        stack: assertion.stack,
-        expected: JSON.stringify(assertion.expected, null, 2),
-        actual: JSON.stringify(assertion.actual, null, 2)
-      } as TestResultError
-      testResult.error = testResultError
-    }
-    return testResult
-  })
-}
-
-function convertTodoToTestResult (qunitTestEndResult: WTRQUnitTestEndResult): TestResult {
-  const { passing, failing } = qunitTestEndResult.assertions.reduce((counts, assertion) => {
-    counts[assertion.passed ? 'passing' : 'failing']++
-    return counts
-  }, { passing: 0, failing: 0 })
-  const name = `TODO with ${passing} passing and ${failing} failing assertions`
   const testResult = {
-    name: name,
-    passed: qunitTestEndResult.status === 'todo',
-    skipped: false
+    name: qunitTestEndResult.name,
+    passed: qunitTestEndResult.status !== 'failed',
+    skipped: qunitTestEndResult.status === 'skipped',
+    duration: qunitTestEndResult.runtime
   } as TestResult
+
   if (!testResult.passed) {
-    testResult.error = {
-      message: 'Expected at least one failure in TODO test but found none',
-      name: qunitTestEndResult.name
-    } as TestResultError
+    const todo = qunitTestEndResult.assertions.some((assertion: WTRQUnitSuiteTestAssertion) => assertion.todo)
+    const firstError = qunitTestEndResult.errors[0]
+    if (todo) {
+      testResult.error = {
+        message: 'TODO test should have at least one failing assertion',
+        expected: '1',
+        actual: '0'
+      }
+    } else if (firstError) {
+      testResult.error = {
+        message: firstError.message,
+        expected: JSON.stringify(firstError.expected, null, 2),
+        actual: JSON.stringify(firstError.actual, null, 2),
+        stack: firstError.stack
+      }
+    }
   }
-  return testResult
+
+  testSuiteResult.tests.push(testResult)
 }
 
 function failed (error: any) {
