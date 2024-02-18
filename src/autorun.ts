@@ -79,11 +79,11 @@ interface WTRQUnitSuiteResult {
 }
 
 const testResultErrors: TestResultError[] = []
-const testSuite = {
+const testSuite: TestSuiteResult = {
   name: '',
   tests: [],
   suites: []
-} as TestSuiteResult
+}
 
 async function run () {
   await sessionStarted()
@@ -198,28 +198,28 @@ async function setupQUnit (qunitBasePath: string) {
  */
 function addToTestSuiteResults (qunitTestEndResult: WTRQUnitTestEndResult) {
   const modules = qunitTestEndResult.fullName.slice(0, -1)
-  const testSuiteResult = modules.reduce((testSuiteInstance: TestSuiteResult, name: string) => {
-    let suite = testSuiteInstance.suites.find((nestedTestSuite: TestSuiteResult) => nestedTestSuite.name === name)
+  const testSuiteResult = modules.reduce((testSuiteInstance, name: string) => {
+    let suite = testSuiteInstance.suites.find((nestedTestSuite) => nestedTestSuite.name === name)
     if (!suite) {
       suite = {
         name,
         suites: [],
         tests: []
-      } as TestSuiteResult
+      }
       testSuiteInstance.suites.push(suite)
     }
     return suite
   }, testSuite)
 
-  const testResult = {
+  const testResult: TestResult = {
     name: qunitTestEndResult.name,
     passed: qunitTestEndResult.status !== 'failed',
     skipped: qunitTestEndResult.status === 'skipped',
     duration: qunitTestEndResult.runtime
-  } as TestResult
+  }
 
   if (!testResult.passed) {
-    const todo = qunitTestEndResult.assertions.some((assertion: WTRQUnitSuiteTestAssertion) => assertion.todo)
+    const todo = qunitTestEndResult.assertions.some((assertion) => assertion.todo)
     const firstError = qunitTestEndResult.errors[0]
     if (todo) {
       testResult.error = {
