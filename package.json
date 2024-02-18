@@ -2,6 +2,7 @@
   "name": "web-test-runner-qunit",
   "version": "1.0.0",
   "description": "A @web/test-runner test framework adapter for QUnit.",
+  "exports": "./dist/autorun.js",
   "main": "dist/autorun.js",
   "module": "dist/autorun.js",
   "types": "dist/autorun.d.ts",
