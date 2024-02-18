@@ -1,5 +1,7 @@
 .github
 .editorconfig
+.eslintrc.cjs
+.nvmrc
 examples
 tests
 web-test-runner.config.js
