@@ -1,14 +1,6 @@
 {
+  "extends": "../tsconfig",
   "compilerOptions": {
-    "module": "esnext",
-    "target": "es2022",
-    "lib": ["es2022", "dom"],
-    "strict": true,
-    "declaration": true,
     "outDir": "../dist",
-    "removeComments": true,
-    "preserveConstEnums": true,
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true
   }
 }
