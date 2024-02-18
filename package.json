@@ -4,7 +4,7 @@
   "description": "A @web/test-runner test framework adapter for QUnit.",
   "main": "dist/autorun.js",
   "module": "dist/autorun.js",
-  "types": "dist/autorun.d.js",
+  "types": "dist/autorun.d.ts",
   "type": "module",
   "scripts": {
     "lint": "eslint .",
