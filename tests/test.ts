@@ -44,4 +44,14 @@ QUnit.module('Group B', () => {
   QUnit.test('basic test example 4', assert => {
     assert.true(true, 'this is also fine')
   })
+
+  QUnit.module('Nested Group 1', () => {
+    QUnit.test('basic test example 5', (assert) => {
+      assert.true(true, 'this is fine')
+    })
+
+    QUnit.test('compare string', (assert) => {
+      assert.equal('test', 'test')
+    })
+  })
 })
