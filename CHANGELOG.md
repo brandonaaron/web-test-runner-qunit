@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [2.0.0] - 2024-02-18
 
 A special thanks to @rnixx and @Krinkle for helping shape this update.
 
