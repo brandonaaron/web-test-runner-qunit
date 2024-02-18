@@ -229,7 +229,7 @@ function addToTestSuiteResults (qunitTestEndResult: WTRQUnitTestEndResult) {
       }
     } else if (firstError) {
       testResult.error = {
-        message: firstError.message,
+        message: firstError.message || 'Assertion Error',
         expected: JSON.stringify(firstError.expected, null, 2),
         actual: JSON.stringify(firstError.actual, null, 2),
         stack: firstError.stack
